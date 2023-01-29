@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	api "github.com/omkaark/proglog/api/v1"
+	api "github.com/omkaark/prolog/api/v1"
 	"github.com/stretchr/testify/require"
 )
 
