@@ -3,10 +3,9 @@ package server
 import (
 	"context"
 
-	api "github.com/omkaark/prolog/api/v1"
+	api "github.com/travisjeffery/proglog/api/v1"
 	"google.golang.org/grpc"
 )
-
 
 type Config struct {
 	CommitLog CommitLog
@@ -26,6 +25,18 @@ func newgrpcServer(config *Config) (srv *grpcServer, err error) {
 	return srv, nil
 }
 
+
+func NewGRPCServer(config *Config) (*grpc.Server, error) {
+	gsrv := grpc.NewServer()
+	srv, err := newgrpcServer(config)
+	if err != nil {
+		return nil, err
+	}
+	api.RegisterLogServer(gsrv, srv)
+	return gsrv, nil
+}
+
+
 func (s *grpcServer) Produce(ctx context.Context, req *api.ProduceRequest) (
 	*api.ProduceResponse, error) {
 	offset, err := s.CommitLog.Append(req.Record)
@@ -44,6 +55,7 @@ func (s *grpcServer) Consume(ctx context.Context, req *api.ConsumeRequest) (
 	return &api.ConsumeResponse{Record: record}, nil
 }
 
+
 func (s *grpcServer) ProduceStream(
 	stream api.Log_ProduceStreamServer,
 ) error {
@@ -61,6 +73,7 @@ func (s *grpcServer) ProduceStream(
 		}
 	}
 }
+
 
 func (s *grpcServer) ConsumeStream(
 	req *api.ConsumeRequest,
@@ -87,17 +100,9 @@ func (s *grpcServer) ConsumeStream(
 	}
 }
 
+
 type CommitLog interface {
 	Append(*api.Record) (uint64, error)
 	Read(uint64) (*api.Record, error)
 }
 
-func NewGRPCServer(config *Config) (*grpc.Server, error) {
-	gsrv := grpc.NewServer()
-	srv, err := newgrpcServer(config)
-	if err != nil {
-		return nil, err
-	}
-	api.RegisterLogServer(gsrv, srv)
-	return gsrv, nil
-}

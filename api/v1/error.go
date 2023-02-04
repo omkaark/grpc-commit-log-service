@@ -20,7 +20,7 @@ func (e ErrOffsetOutOfRange) GRPCStatus() *status.Status {
 		"The requested offset is outside the log's range: %d",
 		e.Offset,
 	)
-	d := &errdetails.LocalizedMessage{
+d := &errdetails.LocalizedMessage{
 		Locale:  "en-US",
 		Message: msg,
 	}
@@ -30,6 +30,7 @@ func (e ErrOffsetOutOfRange) GRPCStatus() *status.Status {
 	}
 	return std
 }
+
 func (e ErrOffsetOutOfRange) Error() string {
 	return e.GRPCStatus().Err().Error()
 }

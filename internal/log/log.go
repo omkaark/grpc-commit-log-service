@@ -10,16 +10,20 @@ import (
 	"strings"
 	"sync"
 
-	api "github.com/omkaark/prolog/api/v1"
+	api "github.com/travisjeffery/proglog/api/v1"
 )
 
 type Log struct {
-	mu            sync.RWMutex
-	Dir           string
-	Config        Config
+	mu sync.RWMutex
+
+	Dir    string
+	Config Config
+
 	activeSegment *segment
 	segments      []*segment
 }
+
+
 
 func NewLog(dir string, c Config) (*Log, error) {
 	if c.Segment.MaxStoreBytes == 0 {
@@ -32,8 +36,10 @@ func NewLog(dir string, c Config) (*Log, error) {
 		Dir:    dir,
 		Config: c,
 	}
+
 	return l, l.setup()
 }
+
 func (l *Log) setup() error {
 	files, err := ioutil.ReadDir(l.Dir)
 	if err != nil {
@@ -60,14 +66,13 @@ func (l *Log) setup() error {
 		i++
 	}
 	if l.segments == nil {
-		if err = l.newSegment(
-			l.Config.Segment.InitialOffset,
-		); err != nil {
+		if err = l.newSegment(l.Config.Segment.InitialOffset); err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
 func (l *Log) Append(record *api.Record) (uint64, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -80,6 +85,8 @@ func (l *Log) Append(record *api.Record) (uint64, error) {
 	}
 	return off, err
 }
+
+
 func (l *Log) Read(off uint64) (*api.Record, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -95,6 +102,19 @@ func (l *Log) Read(off uint64) (*api.Record, error) {
 	}
 	return s.Read(off)
 }
+
+
+func (l *Log) newSegment(off uint64) error {
+	s, err := newSegment(l.Dir, off, l.Config)
+	if err != nil {
+		return err
+	}
+	l.segments = append(l.segments, s)
+	l.activeSegment = s
+	return nil
+}
+
+
 func (l *Log) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -105,23 +125,28 @@ func (l *Log) Close() error {
 	}
 	return nil
 }
+
 func (l *Log) Remove() error {
 	if err := l.Close(); err != nil {
 		return err
 	}
 	return os.RemoveAll(l.Dir)
 }
+
 func (l *Log) Reset() error {
 	if err := l.Remove(); err != nil {
 		return err
 	}
 	return l.setup()
 }
+
+
 func (l *Log) LowestOffset() (uint64, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.segments[0].baseOffset, nil
 }
+
 func (l *Log) HighestOffset() (uint64, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -131,6 +156,8 @@ func (l *Log) HighestOffset() (uint64, error) {
 	}
 	return off - 1, nil
 }
+
+
 func (l *Log) Truncate(lowest uint64) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -147,6 +174,8 @@ func (l *Log) Truncate(lowest uint64) error {
 	l.segments = segments
 	return nil
 }
+
+
 func (l *Log) Reader() io.Reader {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -166,13 +195,4 @@ func (o *originReader) Read(p []byte) (int, error) {
 	n, err := o.ReadAt(p, o.off)
 	o.off += int64(n)
 	return n, err
-}
-func (l *Log) newSegment(off uint64) error {
-	s, err := newSegment(l.Dir, off, l.Config)
-	if err != nil {
-		return err
-	}
-	l.segments = append(l.segments, s)
-	l.activeSegment = s
-	return nil
 }

@@ -6,9 +6,9 @@ import (
 	"net"
 	"testing"
 
-	api "github.com/omkaark/prolog/api/v1"
-	"github.com/omkaark/prolog/internal/log"
 	"github.com/stretchr/testify/require"
+	api "github.com/travisjeffery/proglog/api/v1"
+	"github.com/travisjeffery/proglog/internal/log"
 	"google.golang.org/grpc"
 )
 
